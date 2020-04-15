@@ -1,9 +1,9 @@
-package ru.sberbank.service;
+package ru.sberbank.service.entity;
 
 import java.util.Objects;
 
 public class User {
-	private int id;
+	private final int id;
 	private String name;
 	private String lastName;
 

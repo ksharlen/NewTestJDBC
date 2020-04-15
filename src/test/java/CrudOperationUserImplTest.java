@@ -1,8 +1,9 @@
 import org.h2.tools.DeleteDbFiles;
 import org.h2.tools.Server;
 import org.junit.*;
+import ru.sberbank.service.Crud;
 import ru.sberbank.service.CrudOperationUserImpl;
-import ru.sberbank.service.User;
+import ru.sberbank.service.entity.User;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -90,9 +91,13 @@ public class CrudOperationUserImplTest {
 		User user = new User(1, "Alexandr", "Akinin");
 		boolean create;
 
-		create = crudOperationUserImpl.create(user);
-		Assert.assertTrue(create);
+		crudOperationUserImpl.create(user);
 		create = crudOperationUserImpl.create(user);
 		Assert.assertFalse(create);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testNullException() {
+		Crud<Integer, User> test = new CrudOperationUserImpl(null);
 	}
 }

@@ -1,26 +1,28 @@
 package ru.sberbank.service;
 
+import ru.sberbank.service.entity.User;
+
 import java.sql.*;
 
-public class CrudOperationUserImpl implements Crud<Integer, User> {
+public class CrudOperationUserImpl extends CrudOperationImpl<Integer, User> {
 	private static final String SQL_CREATE_NEW_USER = "insert into Users(id, name, lastName) values(?, ?, ?)";
 	private static final String SQL_READ_USER = "select * from Users where id=?";
 	private static final String SQL_UPDATE_USER = "update Users set name=?, lastName=? where id=?";
 	private static final String SQL_DELETE_USER = "delete from Users where id=?";
 
-	private final Connection connection;
-
 	public CrudOperationUserImpl(Connection connection) {
-		this.connection = connection;
+		super(connection);
 	}
 
 	@Override
 	public boolean create(User user) {
-		try (PreparedStatement statement = connection.prepareStatement(SQL_CREATE_NEW_USER)) {
-			statement.setInt(1, user.getId());
-			statement.setString(2, user.getName());
-			statement.setString(3, user.getLastName());
-			statement.executeUpdate();
+		if (user == null)
+			return (false);
+		try (PreparedStatement preparedStatement = connection.prepareStatement(SQL_CREATE_NEW_USER)) {
+			preparedStatement.setInt(1, user.getId());
+			preparedStatement.setString(2, user.getName());
+			preparedStatement.setString(3, user.getLastName());
+			preparedStatement.executeUpdate();
 		} catch (SQLException e) {
 			return (false);
 		}
@@ -30,10 +32,12 @@ public class CrudOperationUserImpl implements Crud<Integer, User> {
 
 	@Override
 	public User read(Integer key) {
+		if (key == null)
+			return (null);
 		User user = null;
-		try (PreparedStatement statement = connection.prepareStatement(SQL_READ_USER)) {
-			statement.setInt(1, key);
-			ResultSet resultSet = statement.executeQuery();
+		try (PreparedStatement preparedStatement = connection.prepareStatement(SQL_READ_USER)) {
+			preparedStatement.setInt(1, key);
+			ResultSet resultSet = preparedStatement.executeQuery();
 			if (!resultSet.next()) {
 				return (null);
 			} else {
@@ -47,11 +51,13 @@ public class CrudOperationUserImpl implements Crud<Integer, User> {
 
 	@Override
 	public boolean update(User user) {
-		try (PreparedStatement statement = connection.prepareStatement(SQL_UPDATE_USER)) {
-			statement.setString(1, user.getName());
-			statement.setString(2, user.getLastName());
-			statement.setInt(3, user.getId());
-			statement.executeUpdate();
+		if (user == null)
+			return (false);
+		try (PreparedStatement preparedStatement = connection.prepareStatement(SQL_UPDATE_USER)) {
+			preparedStatement.setString(1, user.getName());
+			preparedStatement.setString(2, user.getLastName());
+			preparedStatement.setInt(3, user.getId());
+			preparedStatement.executeUpdate();
 		} catch (SQLException e) {
 			return (false);
 		}
@@ -61,6 +67,8 @@ public class CrudOperationUserImpl implements Crud<Integer, User> {
 
 	@Override
 	public boolean delete(Integer key) {
+		if (key == null)
+			return (false);
 		try (PreparedStatement preparedStatement = connection.prepareStatement(SQL_DELETE_USER)) {
 			preparedStatement.setInt(1, key);
 			preparedStatement.executeUpdate();
