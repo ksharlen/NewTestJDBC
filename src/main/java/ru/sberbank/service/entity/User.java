@@ -58,6 +58,11 @@ public class User implements Mapping {
 	}
 
 	@Override
+	public String toString() {
+		return (id + " " + name + " " + lastName);
+	}
+
+	@Override
 	public void setObject(Object obj) {
 		if (obj instanceof String) {
 			if (name == null) {
@@ -74,6 +79,11 @@ public class User implements Mapping {
 
 	@Override
 	public Object map() {
-		return (new User(this.id, this.name, this.lastName));
+		return (this);
+	}
+
+	@Override
+	public Object createObject() {
+		return (new User());
 	}
 }

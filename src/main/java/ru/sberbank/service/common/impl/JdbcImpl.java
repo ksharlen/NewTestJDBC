@@ -2,11 +2,12 @@ package ru.sberbank.service.common.impl;
 
 import ru.sberbank.service.common.JdbcTemplate;
 import ru.sberbank.service.common.impl.exceptions.JdbcImplException;
-import ru.sberbank.service.common.impl.exceptions.TooManyObjectsException;
+import ru.sberbank.service.common.impl.exceptions.JdbcTooManyObjectsException;
 import ru.sberbank.service.common.mapping.Mapping;
 
 import java.sql.*;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 public class JdbcImpl implements JdbcTemplate {
@@ -29,40 +30,108 @@ public class JdbcImpl implements JdbcTemplate {
 			for (Object param : params) {
 				preparedStatement.setObject(++i, param);
 			}
-			obj = createObject(preparedStatement.executeQuery(), map);
+			ResultSet resultSet = preparedStatement.executeQuery();
+			resultSet.next();
+			obj = createObject(resultSet, map, getColumns(resultSet));
+			if (resultSet.next()) {
+				throw new JdbcTooManyObjectsException();
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 		return (obj);
 	}
 
-	public List<Object> list(String sql, List<Object> params, Mapping map) {
-		return (null);
-	}
-
-	public boolean executeUpdate(String sql) {
-		return (false);
-	}
-
-	public boolean executeUpdate(String sql, List<Object> params) {
-		return (false);
-	}
-
-	private Object createObject(ResultSet resultSet, Mapping map) throws TooManyObjectsException {
-		try {
-			int i = 0;
-			int numColumns = getColumns(resultSet);
+	public Object executeQuery(String sql, Mapping map) throws JdbcTooManyObjectsException {
+		Object newMap = null;
+		validateParams(Arrays.asList(sql, map));
+		try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+			ResultSet resultSet = preparedStatement.executeQuery();
 			resultSet.next();
-			while (i < numColumns) {
-				map.setObject(resultSet.getObject(++i));
-			}
+			newMap = createObject(resultSet, map, getColumns(resultSet));
 			if (resultSet.next()) {
-				throw new TooManyObjectsException();
+				throw new JdbcTooManyObjectsException();
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		return (map.map());
+		return (newMap);
+	}
+
+	public List<Object> list(String sql, List<Object> params, Mapping map) {
+		validateParams(Arrays.asList(sql, params, map));
+		List<Object> list = null;
+		try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+			int i = 0;
+			for (Object param : params) {
+				preparedStatement.setObject(++i, param);
+			}
+			list = createObjects(preparedStatement.executeQuery(), map);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return (list);
+	}
+
+	public List<Object> list(String sql, Mapping map) {
+		validateParams(Arrays.asList(sql, map));
+		List<Object> list = null;
+		try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+			ResultSet resultSet = preparedStatement.executeQuery();
+			list = createObjects(resultSet, map);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return (list);
+	}
+
+	public boolean executeUpdate(String sql) {
+		boolean isSuccessUpdate = false;
+		try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+			isSuccessUpdate = preparedStatement.executeUpdate() > 0;
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return (isSuccessUpdate);
+	}
+
+	public boolean executeUpdate(String sql, List<Object> params) {
+		boolean isSuccessUpdate = false;
+		validateParams(Arrays.asList(sql, params));
+		try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+			int i = 0;
+			for (Object param : params) {
+				preparedStatement.setObject(++i, param);
+			}
+			isSuccessUpdate = preparedStatement.executeUpdate() > 0;
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return (isSuccessUpdate);
+	}
+
+	private Object createObject(ResultSet resultSet, Mapping map, int numColumns) {
+		Mapping newMap = (Mapping) map.createObject();
+		try {
+			int i = 0;
+			while (i < numColumns) {
+				newMap.setObject(resultSet.getObject(++i));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return (newMap);
+	}
+
+	private List<Object> createObjects(ResultSet resultSet, Mapping map) throws SQLException {
+		int numColumns = getColumns(resultSet);
+		List<Object> list = new LinkedList<>();
+
+		while (resultSet.next()) {
+			Object newMap = createObject(resultSet, map, numColumns);
+			list.add(newMap);
+		}
+		return (list);
 	}
 
 	private void validateParams(List<Object> obj) {
