@@ -1,13 +1,22 @@
 package ru.sberbank.service.entity;
 
+import ru.sberbank.service.common.mapping.Mapping;
+
 import java.util.Objects;
 
-public class User {
-	private final int id;
+public class User implements Mapping {
+	private int id;
 	private String name;
 	private String lastName;
 
+	public User() {
+		this.id = -1;
+		this.name = null;
+		this.lastName = null;
+	}
+
 	public User(int id, String name, String lastName) {
+		this();
 		this.id = id;
 		this.name = name;
 		this.lastName = lastName;
@@ -46,5 +55,25 @@ public class User {
 	@Override
 	public int hashCode() {
 		return Objects.hash(id, name, lastName);
+	}
+
+	@Override
+	public void setObject(Object obj) {
+		if (obj instanceof String) {
+			if (name == null) {
+				this.name = (String) obj;
+			} else if (lastName == null) {
+				this.lastName = (String) obj;
+			}
+		} else if (obj instanceof Integer) {
+			if (this.id < 0) {
+				this.id = (Integer) obj;
+			}
+		}
+	}
+
+	@Override
+	public Object map() {
+		return (new User(this.id, this.name, this.lastName));
 	}
 }
