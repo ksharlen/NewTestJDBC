@@ -1,7 +1,7 @@
-package ru.sberbank.service.common;
+package ru.sberbank.service.common.wrappers.jdbc;
 
-import ru.sberbank.service.common.impl.exceptions.JdbcImplException;
-import ru.sberbank.service.common.impl.exceptions.JdbcTooManyObjectsException;
+import ru.sberbank.service.common.wrappers.jdbc.exceptions.JdbcImplException;
+import ru.sberbank.service.common.wrappers.jdbc.exceptions.JdbcTooManyObjectsException;
 import ru.sberbank.service.common.mapping.Mapping;
 
 import java.util.List;

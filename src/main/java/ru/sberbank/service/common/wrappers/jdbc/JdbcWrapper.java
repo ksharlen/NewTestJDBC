@@ -1,8 +1,7 @@
-package ru.sberbank.service.common.impl;
+package ru.sberbank.service.common.wrappers.jdbc;
 
-import ru.sberbank.service.common.JdbcTemplate;
-import ru.sberbank.service.common.impl.exceptions.JdbcImplException;
-import ru.sberbank.service.common.impl.exceptions.JdbcTooManyObjectsException;
+import ru.sberbank.service.common.wrappers.jdbc.exceptions.JdbcImplException;
+import ru.sberbank.service.common.wrappers.jdbc.exceptions.JdbcTooManyObjectsException;
 import ru.sberbank.service.common.mapping.Mapping;
 
 import java.sql.*;
@@ -10,15 +9,19 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-public class JdbcImpl implements JdbcTemplate {
+public class JdbcWrapper implements JdbcTemplate {
 	private final Connection connection;
 
-	public JdbcImpl(Connection connection) {
+	public JdbcWrapper(Connection connection) {
 		if (connection == null) {
 			throw new NullPointerException("connection is null");
 		} else {
 			this.connection = connection;
 		}
+	}
+
+	public Connection getConnection() {
+		return (this.connection);
 	}
 
 	@Override
@@ -31,8 +34,9 @@ public class JdbcImpl implements JdbcTemplate {
 				preparedStatement.setObject(++i, param);
 			}
 			ResultSet resultSet = preparedStatement.executeQuery();
-			resultSet.next();
-			obj = createObject(resultSet, map, getColumns(resultSet));
+			if (resultSet.next()) {
+				obj = createObject(resultSet, map, getColumns(resultSet));
+			}
 			if (resultSet.next()) {
 				throw new JdbcTooManyObjectsException();
 			}
@@ -59,8 +63,9 @@ public class JdbcImpl implements JdbcTemplate {
 	}
 
 	public List<Object> list(String sql, List<Object> params, Mapping map) {
-		validateParams(Arrays.asList(sql, params, map));
 		List<Object> list = null;
+
+		validateParams(Arrays.asList(sql, params, map));
 		try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 			int i = 0;
 			for (Object param : params) {
@@ -74,8 +79,9 @@ public class JdbcImpl implements JdbcTemplate {
 	}
 
 	public List<Object> list(String sql, Mapping map) {
-		validateParams(Arrays.asList(sql, map));
 		List<Object> list = null;
+
+		validateParams(Arrays.asList(sql, map));
 		try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 			ResultSet resultSet = preparedStatement.executeQuery();
 			list = createObjects(resultSet, map);
@@ -87,6 +93,7 @@ public class JdbcImpl implements JdbcTemplate {
 
 	public boolean executeUpdate(String sql) {
 		boolean isSuccessUpdate = false;
+
 		try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 			isSuccessUpdate = preparedStatement.executeUpdate() > 0;
 		} catch (SQLException e) {
@@ -96,7 +103,8 @@ public class JdbcImpl implements JdbcTemplate {
 	}
 
 	public boolean executeUpdate(String sql, List<Object> params) {
-		boolean isSuccessUpdate = false;
+		boolean isSuccessUpdate;
+
 		validateParams(Arrays.asList(sql, params));
 		try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
 			int i = 0;
@@ -105,7 +113,7 @@ public class JdbcImpl implements JdbcTemplate {
 			}
 			isSuccessUpdate = preparedStatement.executeUpdate() > 0;
 		} catch (SQLException e) {
-			e.printStackTrace();
+			return (false);
 		}
 		return (isSuccessUpdate);
 	}
@@ -118,7 +126,7 @@ public class JdbcImpl implements JdbcTemplate {
 				newMap.setObject(resultSet.getObject(++i));
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			return (null);
 		}
 		return (newMap);
 	}
@@ -144,6 +152,7 @@ public class JdbcImpl implements JdbcTemplate {
 
 	private int getColumns(ResultSet resultSet) {
 		int numColumns = 0;
+
 		try {
 			ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 			numColumns = resultSetMetaData.getColumnCount();

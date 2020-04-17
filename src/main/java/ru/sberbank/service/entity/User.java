@@ -78,11 +78,6 @@ public class User implements Mapping {
 	}
 
 	@Override
-	public Object map() {
-		return (this);
-	}
-
-	@Override
 	public Object createObject() {
 		return (new User());
 	}

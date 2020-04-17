@@ -1,4 +1,4 @@
-package ru.sberbank.service.common.impl.exceptions;
+package ru.sberbank.service.common.wrappers.jdbc.exceptions;
 
 public class JdbcTooManyObjectsException extends JdbcImplException {
 	public JdbcTooManyObjectsException() {
