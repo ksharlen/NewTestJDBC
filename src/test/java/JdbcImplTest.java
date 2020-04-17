@@ -1,4 +1,3 @@
-import org.h2.jdbc.JdbcException;
 import org.h2.tools.DeleteDbFiles;
 import org.h2.tools.Server;
 import org.junit.After;
@@ -14,7 +13,6 @@ import java.sql.*;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.TooManyListenersException;
 
 public class JdbcImplTest {
 	private static final String URL = "jdbc:h2:~/test;AUTO_SERVER=TRUE;Mode=Oracle";
@@ -74,27 +72,69 @@ public class JdbcImplTest {
 	}
 
 	@Test
-	public void testList() throws SQLException {
-		boolean isCompare;
-		List<Object> expectedList = new LinkedList<>(Arrays.asList(new User(1, "Alexandr", "Akinin"),
+	public void testExecuteQueryTwoParamsSelectById() throws JdbcImplException {
+		User user = new User(1, "Alexandr", "Akinin");
+		User testUser = null;
+		List<Object> list = new LinkedList<>(Arrays.asList(
+				user,
+				new User(2, "Sergey", "Akinin")
+		));
+		insertInToTableUsers(list);
+		testUser = (User) jdbcImpl.executeQuery("select * from Users where id=1", user);
+		Assert.assertEquals(user, testUser);
+	}
+	//TODO: еще будут тесты для executeQuery
+
+
+	@Test
+	public void testListTwoParams() {
+		boolean isCompare = false;
+		List<Object> expectedList = new LinkedList<>(Arrays.asList(
+				new User(1, "Alexandr", "Akinin"),
 				new User(2, "Petr", "Petrov"),
 				new User(3, "Ivan", "Ivanov")));
 		insertInToTableUsers(expectedList);
-		List<Object> testList = jdbcImpl.list("select * from Users", new User()); //todo: пока не придумал как new User поменять на что-то интересное
+		List<Object> testList = jdbcImpl.list("select * from Users", new User());
 		isCompare = compareList(expectedList, testList);
 		Assert.assertTrue(isCompare);
 	}
 
 	@Test
-	public void testExecuteUpdate() throws JdbcImplException {
-		boolean isSuccessInsert;
-		User user = new User(1, "Alexandr", "Akinin");
-		User testUser = null;
+	public void testListThreeParams() {
+		boolean isCompare = false;
+		List<Object> expectedList = new LinkedList<>(Arrays.asList(
+				new User(1, "Alexandr", "Akinin"),
+				new User(2, "Sergey", "Akinin"),
+				new User(3, "Dmitriy", "Akinin")
+		));
+		insertInToTableUsers(expectedList);
+		List<Object> actualList = jdbcImpl.list("select * from Users where lastName=?", Arrays.asList("Akinin"), new User());
+		isCompare = compareList(expectedList, actualList);
+		Assert.assertTrue(isCompare);
+	}
+	//todo: Еще будут другие тесты для list
 
-		isSuccessInsert = jdbcImpl.executeUpdate(SQL_INSERT, Arrays.asList(user.getId(), user.getName(), user.getLastName()));
+	@Test
+	public void testExecuteUpdateTwoParamsInsertInToTable() throws JdbcImplException {
+		boolean isSuccessInsert = false;
+
+		User expectedUser = new User(1, "Alexandr", "Akinin");
+		isSuccessInsert = jdbcImpl.executeUpdate("insert into Users(id, name, lastName)" +
+				"values(1, 'Alexandr', 'Akinin')");
 		Assert.assertTrue(isSuccessInsert);
-		testUser = (User) jdbcImpl.executeQuery("select * from Users", new User());
-		Assert.assertEquals(testUser, user);
+		User actualUser = (User) jdbcImpl.executeQuery("select * from Users", new User());
+		Assert.assertEquals(expectedUser, actualUser);
+	}
+
+	@Test
+	public void testExecuteUpdateThreeParamsInsertInToTable() throws JdbcImplException {
+		boolean isSuccessInsert = false;
+
+		User expectedUser = new User(1, "Alexandr", "Akinin");
+		isSuccessInsert = jdbcImpl.executeUpdate(SQL_INSERT, Arrays.asList(expectedUser.getId(), expectedUser.getName(), expectedUser.getLastName()));
+		Assert.assertTrue(isSuccessInsert);
+		User actualUser = (User) jdbcImpl.executeQuery("select * from Users", new User());
+		Assert.assertEquals(expectedUser, actualUser);
 	}
 
 	private boolean compareList(List<Object> expected, List<Object> actual) {
